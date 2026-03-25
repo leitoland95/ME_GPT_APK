@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My PWA Project</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="icon" href="/static/icons/favicon.ico" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1 class="brand">My PWA Project</h1>
+
+    <form id="query-form" class="card">
+      <label for="text-input" class="label">Escribe tu consulta</label>
+      <textarea id="text-input" name="text" placeholder="Escribe aquí..." rows="4"></textarea>
+
+      <label class="label">Adjuntar archivos</label>
+      <input id="file-input" type="file" name="files" multiple />
+
+      <div class="actions">
+        <button id="attach-btn" type="button" class="btn secondary">Seleccionar archivos</button>
+        <button id="send-btn" type="submit" class="btn primary">Enviar</button>
+      </div>
+    </form>
+
+    <section id="result" class="result card">
+      <h2>Resultado</h2>
+      <pre id="result-text">Aquí aparecerá la respuesta</pre>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+    }
+  </script>
+</body>
+</html>
