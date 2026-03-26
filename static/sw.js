@@ -1,29 +1,52 @@
-const CACHE_NAME = 'my-pwa-cache-v1';
-const ASSETS = [
-  '/',
-  '/static/index.html',
-  '/static/style.css',
-  '/static/app.js',
-  '/static/manifest.json'
-];
+// Service Worker con experiencia offline combinada (página offline + copia de páginas)
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
-});
+const CACHE = "pwabuilder-offline-page";
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(self.clients.claim());
-});
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
 
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
-  if (url.pathname.startsWith('/api/')) {
-    return; // let API requests go to network
+// Página offline de fallback
+const offlineFallbackPage = "offline.html";
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
-  e.respondWith(
-    caches.match(e.request).then((r) => r || fetch(e.request))
-  );
+});
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.add(offlineFallbackPage);
+  })());
+});
+
+if (workbox.navigationPreload.isSupported()) {
+  workbox.navigationPreload.enable();
+}
+
+workbox.routing.registerRoute(
+  new RegExp('/.*'),
+  new workbox.strategies.StaleWhileRevalidate({
+    cacheName: CACHE
+  })
+);
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const preloadResp = await event.preloadResponse;
+        if (preloadResp) {
+          return preloadResp;
+        }
+
+        const networkResp = await fetch(event.request);
+        return networkResp;
+      } catch (error) {
+        const cache = await caches.open(CACHE);
+        const cachedResp = await cache.match(offlineFallbackPage);
+        return cachedResp;
+      }
+    })());
+  }
 });
